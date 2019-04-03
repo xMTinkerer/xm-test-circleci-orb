@@ -1,0 +1,73 @@
+version: 2.1
+commands:
+  notify:
+    description: Generate an xMatters event
+    parameters:
+      someparm_1:
+        default: ""
+        description: Some parm here
+        type: string
+      xm_url:
+        default: ${XM_URL}
+        description: Enter either your inbound integration url or use the CircleCI UI to add
+          your token under the 'XM_URL' env var
+        type: string
+    steps:
+    - run:
+        command: |
+          if [ -z "$BASH" ]; then
+            echo Bash not installed.
+            exit 1
+          fi
+        name: Provide error if non-bash shell
+    - run:
+        command: |
+          # Provide error if no url is set and error. Otherwise continue
+          if [ -z "<< parameters.xm_url >>" ]; then
+            echo "NO XM_URL SET"
+            echo "Please input your XM_URL value either in the settings for this project, or as a parameter for this orb."
+            exit 1
+          else
+            # Webhook properly set.
+            echo Generating event to xMatters
+            curl -X POST -H 'Content-type: application/json' \
+              --data \
+              '{
+                "properties": {
+                  "parm1": "<< parameters.someparm_1 >>",
+                } 
+              }' "<< parameters.xm_url >>"
+          fi
+        name: xMatters Inbound Command
+        shell: /bin/bash
+description: |
+  Some nice helpful description sauce here.
+examples:
+  notify:
+    description: 'Notify some people via xMatters'
+    usage:
+      jobs:
+        build:
+          docker:
+          - image: <docker image>
+          steps:
+          - xmatters/notify:
+              color: '#42e2f4'
+              mentions: USERID1,USERID2,
+              message: This is a custom message notification
+              webhook: webhook
+      orbs:
+        slack: circleci/slack@1.0.0
+      version: 2.1
+      workflows:
+        your-workflow:
+          jobs:
+          - build
+executors:
+  alpine:
+    docker:
+    - environment:
+        TERM: dumb
+      image: cibuilds/base:latest
+    resource_class: small
+
